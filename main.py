@@ -29,7 +29,7 @@ def get_path():
 def set_wallpaper(path, output):
     #result = subprocess.run(['swaymsg', 'output', output, 'bg ', path, 'fill'], stdout=subprocess.PIPE).stdout.decode('utf-8')
     subprocess.Popen(['/usr/bin/swaybg', '-i', '/tmp/out.png', '-m', 'fill'])
-    time.sleep(.1)
+    time.sleep(.2)
     r2 = subprocess.run(['kill', pid], stdout=subprocess.PIPE)
 
 def draw_text(x, y, text, size=16, color=(255, 255, 255), bold = False):
@@ -143,7 +143,10 @@ while True:
     sx += 5
     sy += 256
 
+    #font = ImageFont.truetype("/usr/share/fonts/TTF/DejaVuSansMono.ttf", 128)
+    #draw.text((1920 / 2, 1080 - 100), shell(['tail', '-1', '/tmp/cava.log']), purple, font=font, anchor="mm")
+
     img.save('/tmp/out.png')
     set_wallpaper("/tmp/out.png", output)
-    time.sleep(1)
+    time.sleep(.5)
     #exit()
