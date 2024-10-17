@@ -1,4 +1,4 @@
-from time import gmtime, strftime
+from time import localtime, strftime
 import os
 import wand
 import subprocess
@@ -68,6 +68,7 @@ while True:
     img = Image.open(wall)
     draw = ImageDraw.Draw(img)
 
+    #Clock
     sx = 10
     sy = 0
     clock = Image.new("RGBA", (246, 128), color= (40, 42, 54))
@@ -76,8 +77,8 @@ while True:
     myFont2 = ImageFont.truetype("OpenSans-Bold.ttf", 16)
     text_x = (clock.width) // 2
     text_y = (clock.height) // 2
-    c1.text((text_x, text_y), str(strftime("%H:%M", gmtime())), font=myFont, fill=(255, 255, 255), anchor="mm")
-    c1.text((text_x, text_y + 45), str(strftime("%d/%m/%Y", gmtime())), font=myFont2, fill=(255, 255, 255), anchor="mm")
+    c1.text((text_x, text_y), str(strftime("%H:%M", localtime())), font=myFont, fill=(255, 255, 255), anchor="mm")
+    c1.text((text_x, text_y + 45), str(strftime("%d/%m/%Y", localtime())), font=myFont2, fill=(255, 255, 255), anchor="mm")
     img.paste(clock, (10, sy))
     sy += 100
     draw_spacer(sx, sy)
