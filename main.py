@@ -1,4 +1,5 @@
 import os
+import wand
 import subprocess
 import time
 import psutil
@@ -18,6 +19,8 @@ wall = "/tmp/wall.png"
 
 def shell(command):
     return subprocess.run(command, stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
+def shelldrop(command):
+    return subprocess.run(command)
 
 def get_path():
     return subprocess.run(['pwd'], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
@@ -98,17 +101,28 @@ while True:
         a = (playing[1])
     except:
         playing = ["", playing]
-    print(playing)
-    namelen = len(playing[1])
+    #namelen = len(playing[1])
     #sx += namelen
     draw_text(sx, sy, str(playing[1]), 16, (255, 85, 85))
     #sx -= namelen
-    singerlen = len(playing[0])
-    #sx += singerlen
+    #singerlen = len(playing[0])
+    sx += 4
     sy += 20
-    draw_text(sx, sy, str(playing[0]), 12, (255, 85, 85))
+    draw_text(sx, sy, str(playing[0]), 12, (178, 71, 81))
     #sx -= singerlen
-
+    #Get thumb
+    filep = shell(['mpc', 'current' ,'-f', "%file%"])
+    shelldrop(['rm', "/tmp/thumb.png"])
+    time.sleep(.2)
+    shelldrop(['ffmpeg', '-y', '-i', '/home/airgeadlamh/Music/' + filep, '-an', '-c:v', 'copy', '/tmp/thumb.png'])
+    time.sleep(.2)
+    try:
+        thumb = Image.open("/tmp/thumb.png")
+        thumb.thumbnail((256, 256))
+        img.paste(thumb, (10, 300))
+    except:
+        print("No Thumbnail")
+    draw.rectangle((10, 300, 266, 300 + 256), outline=(255, 85, 85))
 
     img.save('/tmp/out.png')
     set_wallpaper("/tmp/out.png", output)
