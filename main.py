@@ -126,12 +126,15 @@ while True:
     #sx -= singerlen
     #Get thumb
     filep = shell(['mpc', 'current' ,'-f', "%file%"])
-    shelldrop(['rm', "/tmp/thumb.png"])
-    shelldrop(['ffmpeg', '-y', '-i', '/home/airgeadlamh/Music/' + filep, '-an', '-c:v', 'copy', '/tmp/thumb.png'])
+    thumbname = playing[1]
+    thumbcache = os.path.isfile('/tmp/' + thumbname + '.png')
+
+    if not thumbcache:
+        shelldrop(['ffmpeg', '-y', '-i', '/home/airgeadlamh/Music/' + filep, '-an', '-c:v', 'copy', '/tmp/' + thumbname + '.png'])
     sy += 20
     sx -= 5
     try:
-        thumb = Image.open("/tmp/thumb.png")
+        thumb = Image.open('/tmp/' + thumbname + '.png')
         thumb.thumbnail((256, 256))
         img.paste(thumb, (sx, sy))
     except:
