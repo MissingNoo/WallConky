@@ -67,10 +67,10 @@ while True:
     pid = subprocess.run(['pidof', 'swaybg'], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
     img = Image.open(wall)
     draw = ImageDraw.Draw(img)
-
-    #Clock
     sx = 10
     sy = 0
+
+    #Clock
     clock = Image.new("RGBA", (246, 128), color= (40, 42, 54))
     c1 = ImageDraw.Draw(clock)
     myFont = ImageFont.truetype("OpenSans-Bold.ttf", 75)
@@ -79,7 +79,9 @@ while True:
     text_y = (clock.height) // 2
     c1.text((text_x, text_y), str(strftime("%H:%M", localtime())), font=myFont, fill=(255, 255, 255), anchor="mm")
     c1.text((text_x, text_y + 45), str(strftime("%d/%m/%Y", localtime())), font=myFont2, fill=(255, 255, 255), anchor="mm")
-    img.paste(clock, (10, sy))
+    img.paste(clock, (sx, sy))
+
+    #Spacer
     sy += 100
     draw_spacer(sx, sy)
     sy += 50
