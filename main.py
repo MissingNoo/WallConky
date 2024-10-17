@@ -1,3 +1,4 @@
+from time import gmtime, strftime
 import os
 import wand
 import subprocess
@@ -66,9 +67,19 @@ while True:
     pid = subprocess.run(['pidof', 'swaybg'], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
     img = Image.open(wall)
     draw = ImageDraw.Draw(img)
-    #draw_text(200, 200, str(ramarr), 32)
+
     sx = 10
     sy = 0
+    clock = Image.new("RGBA", (246, 128), color= (40, 42, 54))
+    c1 = ImageDraw.Draw(clock)
+    myFont = ImageFont.truetype("OpenSans-Bold.ttf", 75)
+    myFont2 = ImageFont.truetype("OpenSans-Bold.ttf", 16)
+    text_x = (clock.width) // 2
+    text_y = (clock.height) // 2
+    c1.text((text_x, text_y), str(strftime("%H:%M", gmtime())), font=myFont, fill=(255, 255, 255), anchor="mm")
+    c1.text((text_x, text_y + 45), str(strftime("%d/%m/%Y", gmtime())), font=myFont2, fill=(255, 255, 255), anchor="mm")
+    img.paste(clock, (10, sy))
+    sy += 100
     draw_spacer(sx, sy)
     sy += 50
 
@@ -113,16 +124,18 @@ while True:
     #Get thumb
     filep = shell(['mpc', 'current' ,'-f', "%file%"])
     shelldrop(['rm', "/tmp/thumb.png"])
-    time.sleep(.2)
     shelldrop(['ffmpeg', '-y', '-i', '/home/airgeadlamh/Music/' + filep, '-an', '-c:v', 'copy', '/tmp/thumb.png'])
-    time.sleep(.2)
+    sy += 20
+    sx -= 5
     try:
         thumb = Image.open("/tmp/thumb.png")
         thumb.thumbnail((256, 256))
-        img.paste(thumb, (10, 300))
+        img.paste(thumb, (sx, sy))
     except:
         print("No Thumbnail")
-    draw.rectangle((10, 300, 266, 300 + 256), outline=(255, 85, 85))
+    draw.rectangle((sx, sy, sx + 256, sy + 256), outline=(255, 85, 85))
+    sx += 5
+    sy += 256
 
     img.save('/tmp/out.png')
     set_wallpaper("/tmp/out.png", output)
