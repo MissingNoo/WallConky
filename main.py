@@ -1,4 +1,5 @@
-from time import localtime, strftime
+from time import localtime, strftime, sleep
+import gpu_utils
 import os
 import wand
 import subprocess
@@ -20,6 +21,7 @@ wall = "/tmp/wall.png"
 
 def shell(command):
     return subprocess.run(command, stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
+
 def shelldrop(command):
     return subprocess.run(command)
 
@@ -28,17 +30,17 @@ def get_path():
 
 def set_wallpaper(path, output):
     #result = subprocess.run(['swaymsg', 'output', output, 'bg ', path, 'fill'], stdout=subprocess.PIPE).stdout.decode('utf-8')
-    subprocess.Popen(['/usr/bin/swaybg', '-i', '/tmp/out.png', '-m', 'fill'])
+    subprocess.Popen(['/usr/bin/swaybg', '-i', '/tmp/out.png', '-m', 'fill', '-o', 'HEADLESS-2', '-i', '/home/airgeadlamh/Imagens/wall.png', '-m', 'fill'])
     time.sleep(.2)
     r2 = subprocess.run(['kill', pid], stdout=subprocess.PIPE)
 
-def draw_text(x, y, text, size=16, color=(255, 255, 255), bold = False):
+def draw_text(x, y, text, size=16, color=(255, 255, 255), bold = False, anchor = "lt"):
     # font = ImageFont.truetype(<font-file>, <font-size>)
     if bold:
         font = ImageFont.truetype("OpenSans-Bold.ttf", size)
     else:
         font = ImageFont.truetype("OpenSans-Regular.ttf", size)
-    draw.text((x, y), text, color, font=font)
+    draw.text((x, y), text, color, font=font, anchor = anchor)
 
 def draw_graph(arr):
     if len(arr) > 12:
@@ -47,7 +49,7 @@ def draw_graph(arr):
             pos[0] -= steps
     arr.append([
         sx + offset + (len(arr) * steps),
-        sy + yoffset - ((sy + yoffset * percent) / 100)]
+        sy + yoffset - ((sy + yoffset * percent) / 140)]
     )
     points = []
     for info in arr:
@@ -63,7 +65,16 @@ def draw_spacer(sx, sy):
 
 ramarr = []
 cpuarr = []
+cputemparr = []
+gpuarr = []
+gputemparr = []
+shelldrop(['killall', 'swaybg'])
 while True:
+    gamemode = shell(['gamemoded', '-s'])
+    if gamemode == "gamemode is active":
+        sleep(10)
+    sensors = psutil.sensors_temperatures()
+
     pid = subprocess.run(['pidof', 'swaybg'], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
     img = Image.open(wall)
     draw = ImageDraw.Draw(img)
@@ -82,9 +93,9 @@ while True:
     img.paste(clock, (sx, sy))
 
     #Spacer
-    sy += 100
+    sy += 140
     draw_spacer(sx, sy)
-    sy += 50
+    sy += 20
 
     #RAM
     draw_text(sx, sy, "RAM", 10, (255, 255, 255), True)
@@ -100,6 +111,27 @@ while True:
     percent = psutil.cpu_percent()
     draw_text(sx + 5, sy, str(percent) + "%", 32, (255, 85, 85))
     draw_graph(cpuarr)
+    sy += 50
+    draw_text(sx, sy, "CPU Temp", 10, (255, 255, 255), True)
+    sy += 15
+    percent = sensors["k10temp"][0][1]
+    draw_text(sx + 5, sy, str(percent) + "°", 32, (255, 85, 85))
+    draw_graph(cputemparr)
+    sy += 50
+
+    # GPU
+    draw_text(sx, sy, "GPU", 10, (255, 255, 255), True)
+    sy += 15
+    percent = int(shell(['cat', '/sys/class/hwmon/hwmon0/device/gpu_busy_percent']))
+    draw_text(sx + 5, sy, str(percent) + "%", 32, (255, 85, 85))
+    draw_graph(gpuarr)
+    sy += 50
+    draw_text(sx, sy, "GPU Temp", 10, (255, 255, 255), True)
+    sy += 15
+    percent = sensors["amdgpu"][0][1]
+    draw_text(sx + 5, sy, str(percent) + "°", 32, (255, 85, 85))
+    draw_graph(gputemparr)
+    sy += 15
 
     #Spacer
     sy += 40
@@ -107,41 +139,47 @@ while True:
     sy += 40
 
     #Song
-    draw_text(sx + 100, sy, "Music", 22)
+    stitle = "Music"
+    pctl = shell(['playerctl', '-a', 'metadata', 'title'])
+    pctlstatus = shell(['playerctl', '-a', 'status'])
+    ssource = "mpc"
+    if pctl != "" and pctlstatus != "Paused":
+        stitle = "Playing"
+        ssource = "playerctl"
+    draw_text(sx + 120, sy, stitle, size = 32, anchor = "mm")
     sy += 30
-    playing = shell(['mpc', 'current'])
-    try:
-        playing = playing.split("-")
-        a = (playing[1])
-    except:
-        playing = ["", playing]
-    #namelen = len(playing[1])
-    #sx += namelen
-    draw_text(sx, sy, str(playing[1]), 16, (255, 85, 85))
-    #sx -= namelen
-    #singerlen = len(playing[0])
-    sx += 4
-    sy += 20
-    draw_text(sx, sy, str(playing[0]), 12, (178, 71, 81))
-    #sx -= singerlen
-    #Get thumb
-    filep = shell(['mpc', 'current' ,'-f', "%file%"])
-    thumbname = playing[1]
-    thumbcache = os.path.isfile('/tmp/' + thumbname + '.png')
+    if ssource == "mpc":
+        playing = shell(['mpc', 'current'])
+        try:
+            playing = playing.split("-")
+            a = (playing[1])
+        except:
+            playing = ["", playing]
+    else:
+        playing = ['', pctl]
 
-    if not thumbcache:
-        shelldrop(['ffmpeg', '-y', '-i', '/home/airgeadlamh/Music/' + filep, '-an', '-c:v', 'copy', '/tmp/' + thumbname + '.png'])
-    sy += 20
-    sx -= 5
-    try:
-        thumb = Image.open('/tmp/' + thumbname + '.png')
-        thumb.thumbnail((256, 256))
-        img.paste(thumb, (sx, sy))
-    except:
-        print("No Thumbnail")
-    draw.rectangle((sx, sy, sx + 256, sy + 256), outline=(255, 85, 85))
-    sx += 5
-    sy += 256
+    draw_text(sx + 120, sy, str(playing[1]).strip(), 20, (255, 85, 85), anchor = "mm")
+    if ssource == "mpc":
+        sy += 25
+        draw_text(sx + 120, sy, str(playing[0]).strip(), 12, (178, 71, 81), anchor = "mm")
+        #Get thumb
+        filep = shell(['mpc', 'current' ,'-f', "%file%"])
+        thumbname = playing[1]
+        thumbcache = os.path.isfile('/tmp/' + thumbname + '.png')
+
+        if not thumbcache:
+            shelldrop(['ffmpeg', '-y', '-i', '/home/airgeadlamh/Music/' + filep, '-an', '-c:v', 'copy', '/tmp/' + thumbname + '.png'])
+        sy += 20
+        sx -= 5
+        try:
+            thumb = Image.open('/tmp/' + thumbname + '.png')
+            thumb.thumbnail((256, 256))
+            img.paste(thumb, (sx, sy))
+        except:
+            print("No Thumbnail")
+        draw.rectangle((sx, sy, sx + 256, sy + 256), outline=(255, 85, 85))
+        sx += 5
+        sy += 256
 
     #font = ImageFont.truetype("/usr/share/fonts/TTF/DejaVuSansMono.ttf", 128)
     #draw.text((1920 / 2, 1080 - 100), shell(['tail', '-1', '/tmp/cava.log']), purple, font=font, anchor="mm")
