@@ -63,12 +63,18 @@ def draw_graph(arr):
 def draw_spacer(sx, sy):
     draw_text(sx - 5, sy, "-------------------------", 32, "white")
 
+def get_focused():
+    return shell(['./getfocused.sh'])
+def get_floating():
+    return shell(['./getfloating.sh']) == '"floating_con"'
+
 ramarr = []
 cpuarr = []
 cputemparr = []
 gpuarr = []
 gputemparr = []
 shelldrop(['killall', 'swaybg'])
+lastsong = ""
 while True:
     gamemode = shell(['gamemoded', '-s'])
     if gamemode == "gamemode is active":
@@ -91,6 +97,11 @@ while True:
     c1.text((text_x, text_y), str(strftime("%H:%M", localtime())), font=myFont, fill=(255, 255, 255), anchor="mm")
     c1.text((text_x, text_y + 45), str(strftime("%d/%m/%Y", localtime())), font=myFont2, fill=(255, 255, 255), anchor="mm")
     img.paste(clock, (sx, sy))
+
+    #bar transparency
+    if(get_focused() != "null" and not get_floating()):
+        print("a");
+        draw.rectangle((0, 1040, 1920, 1080), fill = (40, 42, 54))
 
     #Spacer
     sy += 140
@@ -158,30 +169,24 @@ while True:
     if playing[1] != ['']:
         #draw_text(sx + 120, sy, stitle, size=32, anchor="mm")
         draw_text(960, 40, stitle, size=32, anchor="mm")
-        draw_text(960, 80, str(playing[1]).strip(), 20, (255, 85, 85), anchor = "mm")
+        draw_text(960, 80, str(playing[1]).strip(), 30, (255, 85, 85), anchor = "mm")
     if ssource == "mpc" and playing[1] != ['']:
         draw_text(960, 40, "             ", size=32, anchor="mm", fontfile = "fontawesome-regular.ttf")
-        draw_text(960, 100, str(playing[0]).strip(), 12, (178, 71, 81), anchor = "mm")
+        draw_text(960, 110, str(playing[0]).strip(), 20, (178, 71, 81), anchor = "mm")
         #Get thumb
         filep = shell(['mpc', 'current' ,'-f', "%file%"])
-        thumbname = playing[1]
-        thumbcache = False
-        try:
-            thumbcache = os.path.isfile('/tmp/' + thumbname + '.png')
-        except:
-            thumbcache = True
-
-        if not thumbcache:
+        thumbname = playing[1].strip().replace(" ", "")
+        thumbcache = os.path.isfile('/tmp/' + thumbname + '.png')
+        if not thumbcache and lastsong != thumbname:
+            lastsong = thumbname
             shelldrop(['ffmpeg', '-y', '-i', '/home/airgeadlamh/Music/' + filep, '-an', '-c:v', 'copy', '/tmp/' + thumbname + '.png'])
         sy += 0
         sx -= 5
-        try:
+        if os.path.isfile('/tmp/' + thumbname + '.png'):
             thumb = Image.open('/tmp/' + thumbname + '.png')
             thumb.thumbnail((256, 256))
             img.paste(thumb, (sx, sy))
-        except:
-            print("No Thumbnail")
-        draw.rectangle((sx, sy, sx + 256, sy + 256), outline=(255, 85, 85))
+            draw.rectangle((sx, sy, sx + 256, sy + 256), outline=(255, 85, 85))
         sx += 5
         sy += 256
 
@@ -190,5 +195,5 @@ while True:
 
     img.save('/tmp/out.png')
     set_wallpaper("/tmp/out.png", output)
-    time.sleep(.5)
+    #time.sleep(.1)
     #exit()
