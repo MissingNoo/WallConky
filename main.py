@@ -166,12 +166,14 @@ while True:
             playing = ["", playing]
     else:
         playing = ['', pctl]
-    if playing[1] != ['']:
+    mpcplaying = shell(['./mpcstatus.sh']) == "[playing]"
+    if playing[1] != [''] and (pctlstatus == "Playing" or mpcplaying):
         #draw_text(sx + 120, sy, stitle, size=32, anchor="mm")
         draw_text(960, 40, stitle, size=32, anchor="mm")
         draw_text(960, 80, str(playing[1]).strip(), 30, (255, 85, 85), anchor = "mm")
-    if ssource == "mpc" and playing[1] != ['']:
+    if ssource == "mpc" and playing[1] != [''] and mpcplaying:
         draw_text(960, 40, "             ", size=32, anchor="mm", fontfile = "fontawesome-regular.ttf")
+        draw_text(1090, 40, shell(['./mpcnum.sh']), size=20, anchor="mm")
         draw_text(960, 110, str(playing[0]).strip(), 20, (178, 71, 81), anchor = "mm")
         #Get thumb
         filep = shell(['mpc', 'current' ,'-f', "%file%"])
