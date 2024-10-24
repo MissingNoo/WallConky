@@ -30,16 +30,16 @@ def get_path():
 
 def set_wallpaper(path, output):
     #result = subprocess.run(['swaymsg', 'output', output, 'bg ', path, 'fill'], stdout=subprocess.PIPE).stdout.decode('utf-8')
-    subprocess.Popen(['/usr/bin/swaybg', '-i', '/tmp/out.png', '-m', 'fill', '-o', 'HEADLESS-2', '-i', '/home/airgeadlamh/Imagens/wall.png', '-m', 'fill'])
+    subprocess.Popen(['/usr/bin/swaybg', '-i', '/tmp/out.png', '-m', 'fill', '-o', 'HEADLESS-1', '-i', '/home/airgeadlamh/Imagens/wall.png', '-m', 'fill'])
     time.sleep(.2)
     r2 = subprocess.run(['kill', pid], stdout=subprocess.PIPE)
 
-def draw_text(x, y, text, size=16, color=(255, 255, 255), bold = False, anchor = "lt"):
+def draw_text(x, y, text, size=16, color=(255, 255, 255), bold = False, anchor = "lt", fontfile = "OpenSans-Regular.ttf"):
     # font = ImageFont.truetype(<font-file>, <font-size>)
     if bold:
         font = ImageFont.truetype("OpenSans-Bold.ttf", size)
     else:
-        font = ImageFont.truetype("OpenSans-Regular.ttf", size)
+        font = ImageFont.truetype(fontfile, size)
     draw.text((x, y), text, color, font=font, anchor = anchor)
 
 def draw_graph(arr):
@@ -136,7 +136,7 @@ while True:
     #Spacer
     sy += 40
     draw_spacer(sx, sy)
-    sy += 40
+    sy += 30
 
     #Song
     stitle = "Music"
@@ -146,8 +146,6 @@ while True:
     if pctl != "" and pctlstatus != "Paused":
         stitle = "Playing"
         ssource = "playerctl"
-    draw_text(sx + 120, sy, stitle, size = 32, anchor = "mm")
-    sy += 30
     if ssource == "mpc":
         playing = shell(['mpc', 'current'])
         try:
@@ -157,19 +155,25 @@ while True:
             playing = ["", playing]
     else:
         playing = ['', pctl]
-
-    draw_text(sx + 120, sy, str(playing[1]).strip(), 20, (255, 85, 85), anchor = "mm")
-    if ssource == "mpc":
-        sy += 25
-        draw_text(sx + 120, sy, str(playing[0]).strip(), 12, (178, 71, 81), anchor = "mm")
+    if playing[1] != ['']:
+        #draw_text(sx + 120, sy, stitle, size=32, anchor="mm")
+        draw_text(960, 40, stitle, size=32, anchor="mm")
+        draw_text(960, 80, str(playing[1]).strip(), 20, (255, 85, 85), anchor = "mm")
+    if ssource == "mpc" and playing[1] != ['']:
+        draw_text(960, 40, "             ", size=32, anchor="mm", fontfile = "fontawesome-regular.ttf")
+        draw_text(960, 100, str(playing[0]).strip(), 12, (178, 71, 81), anchor = "mm")
         #Get thumb
         filep = shell(['mpc', 'current' ,'-f', "%file%"])
         thumbname = playing[1]
-        thumbcache = os.path.isfile('/tmp/' + thumbname + '.png')
+        thumbcache = False
+        try:
+            thumbcache = os.path.isfile('/tmp/' + thumbname + '.png')
+        except:
+            thumbcache = True
 
         if not thumbcache:
             shelldrop(['ffmpeg', '-y', '-i', '/home/airgeadlamh/Music/' + filep, '-an', '-c:v', 'copy', '/tmp/' + thumbname + '.png'])
-        sy += 20
+        sy += 0
         sx -= 5
         try:
             thumb = Image.open('/tmp/' + thumbname + '.png')
