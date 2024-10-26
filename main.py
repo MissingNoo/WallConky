@@ -85,7 +85,7 @@ while True:
     img = Image.open(wall)
     draw = ImageDraw.Draw(img)
     sx = 10
-    sy = 0
+    sy = 30
 
     #Clock
     clock = Image.new("RGBA", (246, 128), color= (40, 42, 54))
@@ -99,9 +99,15 @@ while True:
     img.paste(clock, (sx, sy))
 
     #bar transparency
+    #if(get_focused() != "null" and not get_floating()):
+    #    print("a");
+    #    draw.rectangle((0, 1040, 1920, 1080), fill = (40, 42, 54))
+
+    # bar clock
     if(get_focused() != "null" and not get_floating()):
-        print("a");
-        draw.rectangle((0, 1040, 1920, 1080), fill = (40, 42, 54))
+        draw_text(450, 19, str(strftime("%H:%M", localtime())), size=15, anchor="mm", fontfile="/usr/share/fonts/TTF/UbuntuMono-B.ttf", color=purple)
+    #    print("a");
+    #    draw.rectangle((0, 1040, 1920, 1080), fill = (40, 42, 54))
 
     #Spacer
     sy += 140
@@ -169,12 +175,12 @@ while True:
     mpcplaying = shell(['./mpcstatus.sh']) == "[playing]"
     if playing[1] != [''] and (pctlstatus == "Playing" or mpcplaying):
         #draw_text(sx + 120, sy, stitle, size=32, anchor="mm")
-        draw_text(960, 40, stitle, size=32, anchor="mm")
-        draw_text(960, 80, str(playing[1]).strip(), 30, (255, 85, 85), anchor = "mm")
+        draw_text(960, 60, stitle, size=32, anchor="mm")
+        draw_text(960, 100, str(playing[1]).strip(), 30, (255, 85, 85), anchor = "mm")
     if ssource == "mpc" and playing[1] != [''] and mpcplaying:
-        draw_text(960, 40, "             ", size=32, anchor="mm", fontfile = "fontawesome-regular.ttf")
-        draw_text(1090, 40, shell(['./mpcnum.sh']), size=20, anchor="mm")
-        draw_text(960, 110, str(playing[0]).strip(), 20, (178, 71, 81), anchor = "mm")
+        draw_text(960, 60, "             ", size=32, anchor="mm", fontfile = "fontawesome-regular.ttf")
+        draw_text(1090, 60, shell(['./mpcnum.sh']), size=20, anchor="mm")
+        draw_text(960, 130, str(playing[0]).strip(), 20, (178, 71, 81), anchor = "mm")
         #Get thumb
         filep = shell(['mpc', 'current' ,'-f', "%file%"])
         thumbname = playing[1].strip().replace(" ", "")
