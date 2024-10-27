@@ -157,12 +157,12 @@ while True:
 
     #Song
     stitle = "Music"
-    pctl = shell(['playerctl', '-a', 'metadata', 'title'])
-    pctlstatus = shell(['playerctl', '-a', 'status'])
+    #pctl = shell(['playerctl', '-a', 'metadata', 'title'])
+    #pctlstatus = shell(['playerctl', '-a', 'status'])
     ssource = "mpc"
-    if pctl != "" and pctlstatus != "Paused":
-        stitle = "Playing"
-        ssource = "playerctl"
+    #if pctl != "" and pctlstatus != "Paused":
+    #    stitle = "Playing"
+    #    ssource = "playerctl"
     if ssource == "mpc":
         playing = shell(['mpc', 'current'])
         try:
@@ -170,10 +170,10 @@ while True:
             a = (playing[1])
         except:
             playing = ["", playing]
-    else:
-        playing = ['', pctl]
+    #else:
+    #    playing = ['', pctl]
     mpcplaying = shell(['./mpcstatus.sh']) == "[playing]"
-    if playing[1] != [''] and (pctlstatus == "Playing" or mpcplaying):
+    if playing[1] != [''] and (mpcplaying):
         #draw_text(sx + 120, sy, stitle, size=32, anchor="mm")
         draw_text(960, 60, stitle, size=32, anchor="mm")
         draw_text(960, 100, str(playing[1]).strip(), 30, (255, 85, 85), anchor = "mm")
