@@ -1,3 +1,5 @@
+import pyautogui
+import random
 from time import localtime, strftime, sleep
 import gpu_utils
 import os
@@ -8,16 +10,23 @@ import psutil
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
+from psutil import cpu_percent
+
 purple = (198, 160, 246)
-wall = "wall.png"
+red = (255, 85, 85)
+green = (80, 250, 123)
+pink = (255, 121, 198)
+walls = ["wall1.png", "wall2.png", "wall3.png"]
 output = "HDMI-A-1"
 offset = 120
 yoffset = 40
 steps = 10
 pid = -1
 
-subprocess.run(['cp', wall, '/tmp/wall.png'], stdout=subprocess.PIPE).stdout.decode('utf-8')
-wall = "/tmp/wall.png"
+subprocess.run(['mkdir', '-p', '/tmp/walls/'], stdout=subprocess.PIPE).stdout.decode('utf-8')
+for w in walls:
+    print(subprocess.run(['cp', w, '/tmp/walls/'], stdout=subprocess.PIPE).stdout.decode('utf-8'))
+wall = "/tmp/walls/wall" + str(random.randrange(1, 4, 1)) + ".png"
 
 def shell(command):
     return subprocess.run(command, stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
@@ -75,7 +84,15 @@ gpuarr = []
 gputemparr = []
 shelldrop(['killall', 'swaybg'])
 lastsong = ""
+iteration = 0
 while True:
+    f = open("/tmp/mousepos", "r")
+    mousepos = f.read().replace("1x1", "").strip().split(",")
+    f.close()
+    if mousepos != ['']:
+        mx = int(mousepos[0])
+        my = int(mousepos[1])
+
     gamemode = shell(['gamemoded', '-s'])
     if gamemode == "gamemode is active":
         sleep(10)
@@ -104,8 +121,7 @@ while True:
     #    draw.rectangle((0, 1040, 1920, 1080), fill = (40, 42, 54))
 
     # bar clock
-    if(get_focused() != "null" and not get_floating()):
-        draw_text(450, 19, str(strftime("%H:%M", localtime())), size=15, anchor="mm", fontfile="/usr/share/fonts/TTF/UbuntuMono-B.ttf", color=purple)
+
     #    print("a");
     #    draw.rectangle((0, 1040, 1920, 1080), fill = (40, 42, 54))
 
@@ -126,12 +142,14 @@ while True:
     draw_text(sx, sy, "CPU", 10, (255, 255, 255), True)
     sy += 15
     percent = psutil.cpu_percent()
+    cpuuse = percent
     draw_text(sx + 5, sy, str(percent) + "%", 32, (255, 85, 85))
     draw_graph(cpuarr)
     sy += 50
     draw_text(sx, sy, "CPU Temp", 10, (255, 255, 255), True)
     sy += 15
     percent = sensors["k10temp"][0][1]
+    cputemp = percent
     draw_text(sx + 5, sy, str(percent) + "°", 32, (255, 85, 85))
     draw_graph(cputemparr)
     sy += 50
@@ -140,12 +158,14 @@ while True:
     draw_text(sx, sy, "GPU", 10, (255, 255, 255), True)
     sy += 15
     percent = int(shell(['cat', '/sys/class/hwmon/hwmon0/device/gpu_busy_percent']))
+    gpuuse = percent
     draw_text(sx + 5, sy, str(percent) + "%", 32, (255, 85, 85))
     draw_graph(gpuarr)
     sy += 50
     draw_text(sx, sy, "GPU Temp", 10, (255, 255, 255), True)
     sy += 15
     percent = sensors["amdgpu"][0][1]
+    gputemp = percent
     draw_text(sx + 5, sy, str(percent) + "°", 32, (255, 85, 85))
     draw_graph(gputemparr)
     sy += 15
@@ -200,8 +220,49 @@ while True:
 
     #font = ImageFont.truetype("/usr/share/fonts/TTF/DejaVuSansMono.ttf", 128)
     #draw.text((1920 / 2, 1080 - 100), shell(['tail', '-1', '/tmp/cava.log']), purple, font=font, anchor="mm")
+    # region Bar
+    draw.rectangle((0, 0, 1920, 1), fill=(68, 71, 90))
+    if (get_focused() != "null" and not get_floating()):
+        xx = 1920 / 2
+        draw_text(xx, 19, str(strftime("%H:%M", localtime())), size=15, anchor="mm",
+                  fontfile="/usr/share/fonts/TTF/UbuntuMono-B.ttf", color=pink)
+        #cpu
+        xx = (1920 / 2) - 120
+        draw_text(xx, 21, "", size=15, anchor="rm",
+                  fontfile="fontawesome-regular.ttf", color=green)
+        xx -= 20
+        draw_text(xx, 19, str(cputemp)[:2] + "° " + str(cpuuse)[:2] + "%", size=15, anchor="rm",
+                  fontfile="/usr/share/fonts/TTF/UbuntuMono-B.ttf", color=green)
 
+        #gpu
+        xx = (1920 / 2) + 120
+        draw_text(xx, 21, "", size=15, anchor="lm",
+                  fontfile = "fontawesome-regular.ttf", color=red)
+        xx += 15
+        draw_text(xx, 19, str(gpuuse)[:2] + "% " + str(gputemp)[:2] + "°", size=15, anchor="lm",
+                  fontfile="/usr/share/fonts/TTF/UbuntuMono-B.ttf", color=red)
+
+        #Music
+        if mpcplaying:
+            xx = 1920 - 210
+            draw_text(xx, 19, playing[1], size=15, anchor="rm",
+                      fontfile="/usr/share/fonts/TTF/UbuntuMono-B.ttf", color=red)
+    # endregion
+
+    #region mouse interaction
+    #draw_text(mx, my, "Mouse")
+    #endregion
+    iteration += 10
+    barl = 1920 - iteration
+    if barl < 1:
+        barl = 1
+    by = 1079
+    draw.rectangle((0, by, barl, by + 1), fill=purple)
+    if iteration >= 1920:
+        iteration = 0
+        wall = "/tmp/walls/wall" + str(random.randrange(1, 4, 1)) + ".png"
     img.save('/tmp/out.png')
+    img.close()
     set_wallpaper("/tmp/out.png", output)
     #time.sleep(.1)
     #exit()
