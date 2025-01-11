@@ -1,4 +1,5 @@
 import pyautogui
+import requests as reqs
 import random
 from time import localtime, strftime, sleep
 import gpu_utils
@@ -98,7 +99,11 @@ while True:
         sleep(10)
     sensors = psutil.sensors_temperatures()
 
-    pid = subprocess.run(['pidof', 'swaybg'], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
+    pid = subprocess.run(['pidof', 'swaybg'], stdout=subprocess.PIPE).stdout.decode('utf-8')
+    if pid.count(' ') > 3:
+        subprocess.run(['killall', 'swaybg'], stdout=subprocess.PIPE).stdout.decode('utf-8')
+    pid = pid.strip()
+    #print(pid)
     img = Image.open(wall)
     draw = ImageDraw.Draw(img)
     sx = 10
@@ -248,11 +253,17 @@ while True:
             draw_text(xx, 19, playing[1], size=15, anchor="rm",
                       fontfile="/usr/share/fonts/TTF/UbuntuMono-B.ttf", color=red)
     # endregion
+    # noinspection PyBroadException
+    try:
+        totalhours = reqs.get('http://127.0.0.1:8000/api/totalhours')
+        draw_text(1910, 1070, "BH: " + totalhours.text, size=20, anchor="rb", fontfile="/usr/share/fonts/TTF/UbuntuMono-B.ttf")
+    except:
+        print()
 
     #region mouse interaction
     #draw_text(mx, my, "Mouse")
     #endregion
-    iteration += 10
+    iteration += 1920 / 12
     barl = 1920 - iteration
     if barl < 1:
         barl = 1
@@ -264,5 +275,5 @@ while True:
     img.save('/tmp/out.png')
     img.close()
     set_wallpaper("/tmp/out.png", output)
-    #time.sleep(.1)
+    time.sleep(.1)
     #exit()
