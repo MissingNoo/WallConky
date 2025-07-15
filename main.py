@@ -17,7 +17,8 @@ purple = (198, 160, 246)
 red = (255, 85, 85)
 green = (80, 250, 123)
 pink = (255, 121, 198)
-walls = ["wall1.png", "wall2.png", "wall3.png"]
+walls = ["wall1.png", "wall2.png", "wall3.png", "wall4.png", "wall5.png"]
+#walls = ["wall5.png"]
 output = "HDMI-A-1"
 offset = 120
 yoffset = 40
@@ -27,7 +28,8 @@ pid = -1
 subprocess.run(['mkdir', '-p', '/tmp/walls/'], stdout=subprocess.PIPE).stdout.decode('utf-8')
 for w in walls:
     print(subprocess.run(['cp', w, '/tmp/walls/'], stdout=subprocess.PIPE).stdout.decode('utf-8'))
-wall = "/tmp/walls/wall" + str(random.randrange(1, 4, 1)) + ".png"
+wall = "/tmp/walls/wall" + str(random.randrange(1, 5, 1)) + ".png"
+wall = "wall5.png"
 
 def shell(command):
     return subprocess.run(command, stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
@@ -39,10 +41,17 @@ def get_path():
     return subprocess.run(['pwd'], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
 
 def set_wallpaper(path, output):
-    #result = subprocess.run(['swaymsg', 'output', output, 'bg ', path, 'fill'], stdout=subprocess.PIPE).stdout.decode('utf-8')
-    subprocess.Popen(['/usr/bin/swaybg', '-i', '/tmp/out.png', '-m', 'fill', '-o', 'HEADLESS-1', '-i', '/home/airgeadlamh/Imagens/wall.png', '-m', 'fill'])
-    time.sleep(.2)
-    r2 = subprocess.run(['kill', pid], stdout=subprocess.PIPE)
+	pid = subprocess.run(['pidof', 'swaybg'], stdout=subprocess.PIPE).stdout.decode('utf-8')
+	if pid.count(' ') > 1:
+		#subprocess.run(['killall', 'swaybg'], stdout=subprocess.PIPE).stdout.decode('utf-8')
+		pid = pid.strip().split(' ')
+		pid = pid[len(pid) - 1]
+		print(pid)
+		r2 = subprocess.run(['kill', pid], stdout=subprocess.PIPE)
+	#result = subprocess.run(['swaymsg', 'output', output, 'bg ', path, 'fill'], stdout=subprocess.PIPE).stdout.decode('utf-8')
+	subprocess.Popen(['/usr/bin/swaybg', '-i', '/tmp/out.png', '-m', 'fill', '-o', 'HEADLESS-1', '-i', '/home/airgeadlamh/Imagens/wall.png', '-m', 'fill'])
+	#time.sleep(3)
+		
 
 def draw_text(x, y, text, size=16, color=(255, 255, 255), bold = False, anchor = "lt", fontfile = "OpenSans-Regular.ttf"):
     # font = ImageFont.truetype(<font-file>, <font-size>)
@@ -83,9 +92,16 @@ cpuarr = []
 cputemparr = []
 gpuarr = []
 gputemparr = []
-shelldrop(['killall', 'swaybg'])
+#shelldrop(['killall', 'swaybg'])
 lastsong = ""
 iteration = 0
+mx = 9999
+my = 19999
+ssx = 0
+ssy = 0
+
+xoff = 275
+
 while True:
     f = open("/tmp/mousepos", "r")
     mousepos = f.read().replace("1x1", "").strip().split(",")
@@ -99,18 +115,24 @@ while True:
         sleep(10)
     sensors = psutil.sensors_temperatures()
 
-    pid = subprocess.run(['pidof', 'swaybg'], stdout=subprocess.PIPE).stdout.decode('utf-8')
-    if pid.count(' ') > 3:
-        subprocess.run(['killall', 'swaybg'], stdout=subprocess.PIPE).stdout.decode('utf-8')
-    pid = pid.strip()
-    #print(pid)
+    
+    mpv = shell(['pidof', 'mpvpaper'])
+    if mpv != "":
+        wall = "blank.png"
     img = Image.open(wall)
     draw = ImageDraw.Draw(img)
+    
     sx = 10
     sy = 30
 
+    if wall == "wall5.png":
+        sx = 960 - 123
+        sy = 30
+
+    
     #Clock
-    clock = Image.new("RGBA", (246, 128), color= (40, 42, 54))
+    clock = Image.new("RGBA", (246, 128), color = (40, 42, 54, 255))
+    clock.paste(img, (-sx, -sy)) #paste image on clock bg
     c1 = ImageDraw.Draw(clock)
     myFont = ImageFont.truetype("OpenSans-Bold.ttf", 75)
     myFont2 = ImageFont.truetype("OpenSans-Bold.ttf", 16)
@@ -119,19 +141,42 @@ while True:
     c1.text((text_x, text_y), str(strftime("%H:%M", localtime())), font=myFont, fill=(255, 255, 255), anchor="mm")
     c1.text((text_x, text_y + 45), str(strftime("%d/%m/%Y", localtime())), font=myFont2, fill=(255, 255, 255), anchor="mm")
     img.paste(clock, (sx, sy))
+    if wall == "wall5.png":
+        sx = 1920 - 286
+        sy = -60
+    
 
+    ssx = sx
+    ssy = sy
     #bar transparency
-    #if(get_focused() != "null" and not get_floating()):
-    #    print("a");
-    #    draw.rectangle((0, 1040, 1920, 1080), fill = (40, 42, 54))
+    if get_focused() != "null" and not get_floating():
+        draw.rectangle((0, 0, 1920, 40), fill=(40, 42, 54))
+        #print("a");
+
 
     # bar clock
 
     #    print("a");
     #    draw.rectangle((0, 1040, 1920, 1080), fill = (40, 42, 54))
-
     #Spacer
     sy += 140
+    #BG
+    bgrect = Image.new("RGBA", (mx, my), color = (40, 42, 54, 0))
+    bgrect.paste(img, (-sx + 15, -sy + 15)) #paste image on clock bg
+
+    TINT_COLOR = (40, 42, 54)  # Black
+    TRANSPARENCY = .65  # Degree of transparency, 0-100%
+    OPACITY = int(255 * TRANSPARENCY)
+    # Make a blank image the same size as the image for the rectangle, initialized
+    # to a fully transparent (0% opaque) version of the tint color, then draw a
+    # semi-transparent version of the square on it.
+    overlay = Image.new('RGBA', bgrect.size, TINT_COLOR+(0,))
+    odraw = ImageDraw.Draw(overlay)  # Create a context for drawing things on it.
+    odraw.rounded_rectangle(((0, 0), (xoff, my - 75)), 20, fill=TINT_COLOR+(OPACITY,))
+
+    # Alpha composite these two images together to obtain the desired result.
+    bgrect = Image.alpha_composite(bgrect, overlay)
+    img.paste(bgrect, (sx - 15, sy - 15))
     draw_spacer(sx, sy)
     sy += 20
 
@@ -222,7 +267,8 @@ while True:
             draw.rectangle((sx, sy, sx + 256, sy + 256), outline=(255, 85, 85))
         sx += 5
         sy += 256
-
+    mx = sx
+    my = sy
     #font = ImageFont.truetype("/usr/share/fonts/TTF/DejaVuSansMono.ttf", 128)
     #draw.text((1920 / 2, 1080 - 100), shell(['tail', '-1', '/tmp/cava.log']), purple, font=font, anchor="mm")
     # region Bar
@@ -271,9 +317,10 @@ while True:
     draw.rectangle((0, by, barl, by + 1), fill=purple)
     if iteration >= 1920:
         iteration = 0
-        wall = "/tmp/walls/wall" + str(random.randrange(1, 4, 1)) + ".png"
+        #wall = "/tmp/walls/wall" + str(random.randrange(1, 5, 1)) + ".png"
+        wall = "wall5.png"
     img.save('/tmp/out.png')
     img.close()
     set_wallpaper("/tmp/out.png", output)
-    time.sleep(.1)
+    time.sleep(1)
     #exit()
