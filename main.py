@@ -125,7 +125,7 @@ while True:
     sx = 10
     sy = 30
 
-    if wall == "wall5.png":
+    if "5" in wall:
         sx = 960 - 123
         sy = 30
 
@@ -141,7 +141,7 @@ while True:
     c1.text((text_x, text_y), str(strftime("%H:%M", localtime())), font=myFont, fill=(255, 255, 255), anchor="mm")
     c1.text((text_x, text_y + 45), str(strftime("%d/%m/%Y", localtime())), font=myFont2, fill=(255, 255, 255), anchor="mm")
     img.paste(clock, (sx, sy))
-    if wall == "wall5.png":
+    if "5" in wall:
         sx = 1920 - 286
         sy = -60
     
@@ -317,7 +317,7 @@ while True:
     draw.rectangle((0, by, barl, by + 1), fill=purple)
     if iteration >= 1920:
         iteration = 0
-        #wall = "/tmp/walls/wall" + str(random.randrange(1, 5, 1)) + ".png"
+        #wall = "/tmp/walls/wall" + str(random.randrange(1, 6, 1)) + ".png"
         wall = "wall5.png"
     img.save('/tmp/out.png')
     img.close()
