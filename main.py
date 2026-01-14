@@ -17,8 +17,7 @@ purple = (198, 160, 246)
 red = (255, 85, 85)
 green = (80, 250, 123)
 pink = (255, 121, 198)
-walls = ["wall1.png", "wall2.png", "wall3.png", "wall4.png", "wall5.png"]
-#walls = ["wall5.png"]
+walls = ["wall1.png", "wall2.png", "wall3.png", "wall4.png"]
 output = "HDMI-A-1"
 offset = 120
 yoffset = 40
@@ -27,10 +26,17 @@ pid = -1
 
 subprocess.run(['mkdir', '-p', '/tmp/walls/'], stdout=subprocess.PIPE).stdout.decode('utf-8')
 for w in walls:
-    print(subprocess.run(['cp', w, '/tmp/walls/'], stdout=subprocess.PIPE).stdout.decode('utf-8'))
-wall = "/tmp/walls/wall" + str(random.randrange(1, 5, 1)) + ".png"
-wall = "wall5.png"
+    subprocess.run(['cp', w, '/tmp/walls/'], stdout=subprocess.PIPE).stdout.decode('utf-8')
+wall = "/tmp/walls/wall" + str(random.randrange(1, len(walls), 1)) + ".png"
+#wall = "wall1.png"
 
+def get_pids(process):
+
+    pids = []
+    for proc in psutil.process_iter():
+        if proc.name() == process:
+            pids.append(proc.pid)
+    return pids
 def shell(command):
     return subprocess.run(command, stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
 
@@ -41,17 +47,56 @@ def get_path():
     return subprocess.run(['pwd'], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
 
 def set_wallpaper(path, output):
-	pid = subprocess.run(['pidof', 'swaybg'], stdout=subprocess.PIPE).stdout.decode('utf-8')
-	if pid.count(' ') > 1:
-		#subprocess.run(['killall', 'swaybg'], stdout=subprocess.PIPE).stdout.decode('utf-8')
-		pid = pid.strip().split(' ')
-		pid = pid[len(pid) - 1]
-		print(pid)
-		r2 = subprocess.run(['kill', pid], stdout=subprocess.PIPE)
+    pids = get_pids("swaybg")
+    killed = 0
+    while killed < len(pids) - 1:
+        killed += 1
+        #lower = 0
+        #for pid in pids:
+        #    if pid < lower:
+        #        lower = pid
+        pid = pids.pop(0)
+        #if lower != 0:
+        psutil.Process(pid).terminate()
+    #r2 = subprocess.run(['kill', str(lower)], stdout=subprocess.PIPE)
 	#result = subprocess.run(['swaymsg', 'output', output, 'bg ', path, 'fill'], stdout=subprocess.PIPE).stdout.decode('utf-8')
-	subprocess.Popen(['/usr/bin/swaybg', '-i', '/tmp/out.png', '-m', 'fill', '-o', 'HEADLESS-1', '-i', '/home/airgeadlamh/Imagens/wall.png', '-m', 'fill'])
+    subprocess.Popen(['/usr/bin/swaybg', '-i', '/tmp/out.png', '-m', 'fill', '-o', 'DP-2', '-i', '/home/airgeadlamh/.w.png', '-m', 'fill'], stdout=subprocess.DEVNULL)
 	#time.sleep(3)
 		
+def draw_playlist(img):
+    pw = 300
+    ph = 1080 - 50 - 10
+    list = shell(["mpc", "playlist"]).split("\n")
+    playlist = Image.new("RGBA", (pw + 1, ph + 1), color = (40, 42, 54, 255))
+    playlist.paste(img, (-sx, -sy)) #paste image on clock bg
+    p1 = ImageDraw.Draw(playlist)
+    myFont = ImageFont.truetype("OpenSans-Bold.ttf", 16)
+    yoff = 10
+    now = shell(["mpc", "status"]).split("\n")[0]
+    is_random = shell(["mpc_is_random"])
+    was_red = False
+    if is_random == "on":
+        list[0] = now
+        random.shuffle(list)
+    for i in list:
+        if now != i:
+            yoff -= 16
+        else:
+            break
+    for i in list:
+        fill = (255, 255, 255)
+        if now == i and was_red == False:
+            fill = (255, 0, 0)
+            was_red = True
+        if yoff > 0 and yoff < ph - 10:
+            p1.text((5, yoff), str(i), font=myFont, fill=fill, anchor="lm")
+        if yoff < ph:
+            yoff += 16
+    p1.rectangle((0, 0, pw, ph), fill=None, outline=purple)
+    img.paste(playlist, (1920 - pw - 10, 50))
+    
+    
+    #print(list)
 
 def draw_text(x, y, text, size=16, color=(255, 255, 255), bold = False, anchor = "lt", fontfile = "OpenSans-Regular.ttf"):
     # font = ImageFont.truetype(<font-file>, <font-size>)
@@ -99,7 +144,7 @@ mx = 9999
 my = 19999
 ssx = 0
 ssy = 0
-
+justchanged = False
 xoff = 275
 
 while True:
@@ -121,14 +166,11 @@ while True:
         wall = "blank.png"
     img = Image.open(wall)
     draw = ImageDraw.Draw(img)
-    
+    if mpv != "":
+        draw.rectangle((0, 31, 200, 1080), fill=(249, 219, 223))
     sx = 10
     sy = 30
-
-    if "5" in wall:
-        sx = 960 - 123
-        sy = 30
-
+    
     
     #Clock
     clock = Image.new("RGBA", (246, 128), color = (40, 42, 54, 255))
@@ -141,9 +183,12 @@ while True:
     c1.text((text_x, text_y), str(strftime("%H:%M", localtime())), font=myFont, fill=(255, 255, 255), anchor="mm")
     c1.text((text_x, text_y + 45), str(strftime("%d/%m/%Y", localtime())), font=myFont2, fill=(255, 255, 255), anchor="mm")
     img.paste(clock, (sx, sy))
-    if "5" in wall:
-        sx = 1920 - 286
-        sy = -60
+    #Silksong meme
+    #try:
+    #    totalhours = reqs.get('http://127.0.0.1:8000/api/totalhours')
+    #    draw_text(1280/2 + 330, sy + 150, "Time until Silksong: " + totalhours.text, color="red", size=20, anchor="mm", fontfile="/usr/share/fonts/TTF/UbuntuMono-B.ttf")
+    #except:
+    #    print()
     
 
     ssx = sx
@@ -244,6 +289,7 @@ while True:
     #    playing = ['', pctl]
     mpcplaying = shell(['./mpcstatus.sh']) == "[playing]"
     if playing[1] != [''] and (mpcplaying):
+        draw_playlist(img)
         #draw_text(sx + 120, sy, stitle, size=32, anchor="mm")
         draw_text(960, 60, stitle, size=32, anchor="mm")
         draw_text(960, 100, str(playing[1]).strip(), 30, (255, 85, 85), anchor = "mm")
@@ -253,7 +299,11 @@ while True:
         draw_text(960, 130, str(playing[0]).strip(), 20, (178, 71, 81), anchor = "mm")
         #Get thumb
         filep = shell(['mpc', 'current' ,'-f', "%file%"])
-        thumbname = playing[1].strip().replace(" ", "")
+        thumbname = ""
+        try:
+            thumbname = playing[1].strip().replace(" ", "")
+        except Exception as e:
+            print("error")
         thumbcache = os.path.isfile('/tmp/' + thumbname + '.png')
         if not thumbcache and lastsong != thumbname:
             lastsong = thumbname
@@ -273,6 +323,7 @@ while True:
     #draw.text((1920 / 2, 1080 - 100), shell(['tail', '-1', '/tmp/cava.log']), purple, font=font, anchor="mm")
     # region Bar
     draw.rectangle((0, 0, 1920, 1), fill=(68, 71, 90))
+
     if (get_focused() != "null" and not get_floating()):
         xx = 1920 / 2
         draw_text(xx, 19, str(strftime("%H:%M", localtime())), size=15, anchor="mm",
@@ -295,16 +346,16 @@ while True:
 
         #Music
         if mpcplaying:
-            xx = 1920 - 210
+            xx = 1920 - 260 #210
             draw_text(xx, 19, playing[1], size=15, anchor="rm",
                       fontfile="/usr/share/fonts/TTF/UbuntuMono-B.ttf", color=red)
     # endregion
     # noinspection PyBroadException
-    try:
-        totalhours = reqs.get('http://127.0.0.1:8000/api/totalhours')
-        draw_text(1910, 1070, "BH: " + totalhours.text, size=20, anchor="rb", fontfile="/usr/share/fonts/TTF/UbuntuMono-B.ttf")
-    except:
-        print()
+    #try:
+    #    totalhours = reqs.get('http://127.0.0.1:8000/api/totalhours')
+    #    draw_text(1910, 1070, "BH: " + totalhours.text, size=20, anchor="rb", fontfile="/usr/share/fonts/TTF/UbuntuMono-B.ttf")
+    #except:
+    #    print()
 
     #region mouse interaction
     #draw_text(mx, my, "Mouse")
@@ -314,11 +365,11 @@ while True:
     if barl < 1:
         barl = 1
     by = 1079
-    draw.rectangle((0, by, barl, by + 1), fill=purple)
+    #draw.rectangle((0, by, barl, by + 1), fill=purple)
     if iteration >= 1920:
         iteration = 0
-        #wall = "/tmp/walls/wall" + str(random.randrange(1, 6, 1)) + ".png"
-        wall = "wall5.png"
+        wall = "/tmp/walls/wall" + str(random.randrange(1, len(walls), 1)) + ".png"
+        #wall = "/tmp/walls/wall1.png"
     img.save('/tmp/out.png')
     img.close()
     set_wallpaper("/tmp/out.png", output)
