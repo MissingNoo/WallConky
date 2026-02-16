@@ -99,6 +99,8 @@ def draw_playlist(img):
     #print(list)
 
 def draw_text(x, y, text, size=16, color=(255, 255, 255), bold = False, anchor = "lt", fontfile = "OpenSans-Regular.ttf"):
+    if y > 40 and get_focused() != "null":
+        return
     # font = ImageFont.truetype(<font-file>, <font-size>)
     if bold:
         font = ImageFont.truetype("OpenSans-Bold.ttf", size)
@@ -107,6 +109,8 @@ def draw_text(x, y, text, size=16, color=(255, 255, 255), bold = False, anchor =
     draw.text((x, y), text, color, font=font, anchor = anchor)
 
 def draw_graph(arr):
+    if get_focused() != "null":
+        return
     if len(arr) > 12:
         arr.pop(0)
         for pos in arr:
@@ -173,16 +177,17 @@ while True:
     
     
     #Clock
-    clock = Image.new("RGBA", (246, 128), color = (40, 42, 54, 255))
-    clock.paste(img, (-sx, -sy)) #paste image on clock bg
-    c1 = ImageDraw.Draw(clock)
-    myFont = ImageFont.truetype("OpenSans-Bold.ttf", 75)
-    myFont2 = ImageFont.truetype("OpenSans-Bold.ttf", 16)
-    text_x = (clock.width) // 2
-    text_y = (clock.height) // 2
-    c1.text((text_x, text_y), str(strftime("%H:%M", localtime())), font=myFont, fill=(255, 255, 255), anchor="mm")
-    c1.text((text_x, text_y + 45), str(strftime("%d/%m/%Y", localtime())), font=myFont2, fill=(255, 255, 255), anchor="mm")
-    img.paste(clock, (sx, sy))
+    if get_focused() == "null":
+        clock = Image.new("RGBA", (246, 128), color = (40, 42, 54, 255))
+        clock.paste(img, (-sx, -sy)) #paste image on clock bg
+        c1 = ImageDraw.Draw(clock)
+        myFont = ImageFont.truetype("OpenSans-Bold.ttf", 75)
+        myFont2 = ImageFont.truetype("OpenSans-Bold.ttf", 16)
+        text_x = (clock.width) // 2
+        text_y = (clock.height) // 2
+        c1.text((text_x, text_y), str(strftime("%H:%M", localtime())), font=myFont, fill=(255, 255, 255), anchor="mm")
+        c1.text((text_x, text_y + 45), str(strftime("%d/%m/%Y", localtime())), font=myFont2, fill=(255, 255, 255), anchor="mm")
+        img.paste(clock, (sx, sy))
     #Silksong meme
     #try:
     #    totalhours = reqs.get('http://127.0.0.1:8000/api/totalhours')
@@ -287,36 +292,37 @@ while True:
             playing = ["", playing]
     #else:
     #    playing = ['', pctl]
-    mpcplaying = shell(['./mpcstatus.sh']) == "[playing]"
-    if playing[1] != [''] and (mpcplaying):
-        draw_playlist(img)
-        #draw_text(sx + 120, sy, stitle, size=32, anchor="mm")
-        draw_text(960, 60, stitle, size=32, anchor="mm")
-        draw_text(960, 100, str(playing[1]).strip(), 30, (255, 85, 85), anchor = "mm")
-    if ssource == "mpc" and playing[1] != [''] and mpcplaying:
-        draw_text(960, 60, "             ", size=32, anchor="mm", fontfile = "fontawesome-regular.ttf")
-        draw_text(1090, 60, shell(['./mpcnum.sh']), size=20, anchor="mm")
-        draw_text(960, 130, str(playing[0]).strip(), 20, (178, 71, 81), anchor = "mm")
-        #Get thumb
-        filep = shell(['mpc', 'current' ,'-f', "%file%"])
-        thumbname = ""
-        try:
-            thumbname = playing[1].strip().replace(" ", "")
-        except Exception as e:
-            print("error")
-        thumbcache = os.path.isfile('/tmp/' + thumbname + '.png')
-        if not thumbcache and lastsong != thumbname:
-            lastsong = thumbname
-            shelldrop(['ffmpeg', '-y', '-i', '/home/airgeadlamh/Music/' + filep, '-an', '-c:v', 'copy', '/tmp/' + thumbname + '.png'])
-        sy += 0
-        sx -= 5
-        if os.path.isfile('/tmp/' + thumbname + '.png'):
-            thumb = Image.open('/tmp/' + thumbname + '.png')
-            thumb.thumbnail((256, 256))
-            img.paste(thumb, (sx, sy))
-            draw.rectangle((sx, sy, sx + 256, sy + 256), outline=(255, 85, 85))
-        sx += 5
-        sy += 256
+    if get_focused() == "null":
+        mpcplaying = shell(['./mpcstatus.sh']) == "[playing]"
+        if playing[1] != [''] and (mpcplaying):
+            #draw_playlist(img)
+            #draw_text(sx + 120, sy, stitle, size=32, anchor="mm")
+            draw_text(960, 60, stitle, size=32, anchor="mm")
+            draw_text(960, 100, str(playing[1]).strip(), 30, (255, 85, 85), anchor = "mm")
+        if ssource == "mpc" and playing[1] != [''] and mpcplaying:
+            draw_text(960, 60, "             ", size=32, anchor="mm", fontfile = "fontawesome-regular.ttf")
+            draw_text(1090, 60, shell(['./mpcnum.sh']), size=20, anchor="mm")
+            draw_text(960, 130, str(playing[0]).strip(), 20, (178, 71, 81), anchor = "mm")
+            #Get thumb
+            filep = shell(['mpc', 'current' ,'-f', "%file%"])
+            thumbname = ""
+            try:
+                thumbname = playing[1].strip().replace(" ", "")
+            except Exception as e:
+                print("error")
+            thumbcache = os.path.isfile('/tmp/' + thumbname + '.png')
+            if not thumbcache and lastsong != thumbname:
+                lastsong = thumbname
+                shelldrop(['ffmpeg', '-y', '-i', '/home/airgeadlamh/Music/' + filep, '-an', '-c:v', 'copy', '/tmp/' + thumbname + '.png'])
+            sy += 0
+            sx -= 5
+            if os.path.isfile('/tmp/' + thumbname + '.png'):
+                thumb = Image.open('/tmp/' + thumbname + '.png')
+                thumb.thumbnail((256, 256))
+                img.paste(thumb, (sx, sy))
+                draw.rectangle((sx, sy, sx + 256, sy + 256), outline=(255, 85, 85))
+            sx += 5
+            sy += 256
     mx = sx
     my = sy
     #font = ImageFont.truetype("/usr/share/fonts/TTF/DejaVuSansMono.ttf", 128)
@@ -347,7 +353,8 @@ while True:
         #Music
         if mpcplaying:
             xx = 1920 - 260 #210
-            draw_text(xx, 19, playing[1], size=15, anchor="rm",
+            if (len(playing) >= 1):
+                draw_text(xx, 19, playing[1], size=15, anchor="rm",
                       fontfile="/usr/share/fonts/TTF/UbuntuMono-B.ttf", color=red)
     # endregion
     # noinspection PyBroadException
